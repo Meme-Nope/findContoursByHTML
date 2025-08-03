@@ -7,7 +7,7 @@ Flask + OpenCV + Dockerを掛け合わせるという、学習としての側面
 ## 📁 ディレクトリ構成
 ```
 project/
-├── app/
+├── src/
 │   ├── main.py            # Flaskアプリのエントリーポイント
 │   ├── processor.py       # OpenCVを使った画像前処理ロジック
 │   ├── templates/

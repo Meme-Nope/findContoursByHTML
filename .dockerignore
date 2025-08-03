@@ -1,14 +1,48 @@
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-*.env
-.idea/
-.vscode/
-.DS_Store
+# directory
 .git/
 .gitignore
 README.md
+
+# python Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
+
+# python Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# python Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# JetBrain User-specific stuff
+.idea/
+
+# VisualStudioCode
+.vscode/
+
+# macOS General
+.DS_Store
