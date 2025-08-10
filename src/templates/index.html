@@ -2,80 +2,86 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>画像アップロードページ</title>
+  <title>画像抽出ツール</title>
+  <!-- 元CSSは残す -->
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <!-- 追加: Pico.css -->
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css">
 </head>
 <body>
-  <h1>画像切り抜きツール</h1>
+  <main class="container">
+    <h1>画像抽出ツール</h1>
 
-  <!-- 単一画像アップロードフォーム -->
-  <form method="POST" action="/upload_single" enctype="multipart/form-data">
-    <label>画像を選択:</label>
-    <input type="file" name="image" accept="image/*" required>
-    <br>
-    <label>ガウシアンぼかしサイズ (K_SIZE):</label>
-    <select name="k_size" id="k_size" required>
-      {% set k_cur = (k_size_str|default('3'))|string %}
-      {% for k in ['3','5','7','9','11','13'] %}
-        <option value="{{ k }}" {{ 'selected' if k_cur==k else '' }}>{{ k }} × {{ k }}</option>
+    <!-- 単一画像アップロードフォーム -->
+    <form method="POST" action="/upload_single" enctype="multipart/form-data" class="grid">
+      <label>画像を選択:
+        <input type="file" name="image" accept="image/*" required>
+      </label>
+
+      <label>ガウシアンぼかしサイズ (K_SIZE):
+        <select name="k_size" id="k_size" required>
+          {% set k_cur = (k_size_str|default('3'))|string %}
+          {% for k in ['3','5','7','9','11','13'] %}
+            <option value="{{ k }}" {{ 'selected' if k_cur==k else '' }}>{{ k }} × {{ k }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>SIGMA_X:
+        <select name="sigma_x" id="sigma_x" required>
+          {% set s_cur = (sigma_x_str|default('0'))|string %}
+          {% for s in ['0','0.5','1.0','1.5','2.0'] %}
+            <option value="{{ s }}" {{ 'selected' if s_cur==s else '' }}>{{ s == '0' and '0（自動計算）' or s }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <button type="submit">アップロード</button>
+    </form>
+
+    {% if hist_image %}
+      <h2>ヒストグラム:</h2>
+      <img src="{{ url_for('static', filename=hist_image) }}?t={{ timestamp }}" alt="ヒストグラム表示エラー" style="max-width:100%">
+
+      <form method="POST" action="/binarize_single" class="grid">
+        <input type="hidden" name="filename" value="{{ image_filename }}">
+        <input type="hidden" name="k_size" value="{{ k_size_str|default('3') }}">
+        <input type="hidden" name="sigma_x" value="{{ sigma_x_str|default('0') }}">
+
+        <label>二値化方法:
+          <select name="method" onchange="toggleRangeFields(this.value)">
+            <option value="otsu">OTSU</option>
+            <option value="inRange">inRange</option>
+          </select>
+        </label>
+
+        <div id="rangeFields" class="grid">
+          <label>下限値:
+            <input type="number" name="lower" value="100">
+          </label>
+          <label>上限値:
+            <input type="number" name="upper" value="200">
+          </label>
+        </div>
+
+        <button type="submit">二値化して処理</button>
+      </form>
+
+      <script>
+        function toggleRangeFields(method) {
+          document.getElementById("rangeFields").style.display = (method === "inRange") ? "block" : "none";
+        }
+        toggleRangeFields("{{ method or 'otsu' }}");
+      </script>
+    {% endif %}
+
+    {% if result_files %}
+      <h3>処理済み画像:</h3>
+      <p>使用パラメータ: k={{ k_size_str }}, sigmaX={{ sigma_x_str }}</p>
+      {% for img in result_files %}
+        <img src="{{ url_for('static', filename=img) }}" width="300" style="max-width:100%"><br>
       {% endfor %}
-    </select>
-
-    <label>SIGMA_X:</label>
-    <select name="sigma_x" id="sigma_x" required>
-      {% set s_cur = (sigma_x_str|default('0'))|string %}
-      {% for s in ['0','0.5','1.0','1.5','2.0'] %}
-        <option value="{{ s }}" {{ 'selected' if s_cur==s else '' }}>{{ s == '0' and '0（自動計算）' or s }}</option>
-      {% endfor %}
-    </select>
-
-    <br>
-    <button type="submit">アップロード</button>
-  </form>
-
-  {% if hist_image %}
-  <h2>ヒストグラム:</h2>
-  <img src="{{ url_for('static', filename=hist_image) }}?t={{ timestamp }}" alt="ヒストグラム表示エラー">
-
-
-  <form method="POST" action="/binarize_single">
-    <input type="hidden" name="filename" value="{{ image_filename }}">
-    <input type="hidden" name="k_size" value="{{ k_size_str|default('3') }}">
-    <input type="hidden" name="sigma_x" value="{{ sigma_x_str|default('0') }}">
-
-    
-    <label>二値化方法:</label>
-    <select name="method" onchange="toggleRangeFields(this.value)">
-      <option value="otsu">OTSU</option>
-      <option value="inRange">inRange</option>
-    </select><br>
-
-    <div id="rangeFields">
-      <label>下限値:</label>
-      <input type="number" name="lower" value="100"><br>
-      <label>上限値:</label>
-      <input type="number" name="upper" value="200"><br>
-    </div>
-
-    <button type="submit">二値化して処理</button>
-  </form>
-
-  <script>
-  function toggleRangeFields(method) {
-    document.getElementById("rangeFields").style.display = (method === "inRange") ? "block" : "none";
-  }
-  // 初期化（テンプレ変数methodがあればそれで、なければ'otsu'想定）
-  toggleRangeFields("{{ method or 'otsu' }}");
-</script>
-{% endif %}
-
-{% if result_files %}
-  <h3>処理済み画像:</h3>
-  <p>使用パラメータ: k={{ k_size_str }}, sigmaX={{ sigma_x_str }}</p>
-  {% for img in result_files %}
-    <img src="{{ url_for('static', filename=img) }}" width="300"><br>
-  {% endfor %}
-{% endif %}
-
+    {% endif %}
+  </main>
 </body>
 </html>

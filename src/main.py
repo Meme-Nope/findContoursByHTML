@@ -91,7 +91,7 @@ def binarize_single():
     sigma_x = float(request.form.get("sigma_x", "0"))
     if sigma_x < 0: sigma_x = 0.0
 
-    method = request.form.get("method", "otsu")
+    method = request.form.get("method", "")
     lower = int(request.form.get("lower", 100)) if method == "inRange" else None
     upper = int(request.form.get("upper", 200)) if method == "inRange" else None
 
