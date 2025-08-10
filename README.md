@@ -25,7 +25,7 @@ HTML UI 経由で画像をアップロードし、処理済み画像を確認で
 ### 3. アプリ起動
 
 解答したzipフォルダを右クリックして「ターミナルで開く(PowerShellで開く)」
-開いたターミナル上で、次の一文を入力して、Enter
+開いたターミナル(Windows PowerShell)上で、次の一文を入力して、Enter
 
 ```bash
 docker build -t flask-processor .
@@ -71,6 +71,27 @@ http://localhost:5000
 
 処理済み画像が出力される
 
+### 8. システムを止める
+
+ターミナル(Windows PowerShell)上でctrl+Cを押すとシステムが止まる
+
+### (9. もう一度使う)
+
+ターミナル(Windows PowerShell)上で次の文を入力して、Enter
+```bash
+docker start contours-app
+```
+### (もしエラーが起きたら)
+
+以下のエラーが発生することがある  
+docker: Error response from daemon: Conflict. The container name "/contours-app" is already in use by container  
+
+これは過去に作ったコンテナが邪魔をしている状態なので、  
+ターミナル(Windows PowerShell)上で次の文を入力して、Enterを押すと直る
+```bash
+docker rm -f contours-app
+```
+
 ## ハイパーパラメータの調整
 
 画像処理が上手くいかないことも...  
@@ -110,13 +131,14 @@ http://localhost:5000
 ## 📁 ディレクトリ構成
 ```
 .
-├── app/
+├── src/
 │   ├── main.py         ← Flaskエントリーポイント
 │   ├── processor.py    ← OpenCVによる画像処理
-│   ├── templates/      ← index.html
-│   └── static/         ← 処理後画像などの保存場所
+│   ├── templates/      ← index.htmlを保存
+│   └── static/         ← 処理後画像やデザインを保存
 ├── requirements.txt    ← 必要なPythonライブラリ
 ├── Dockerfile          ← 実行環境定義
+├── .gitignore          ← Gitレポジトリ除外設定
 └── .dockerignore       ← ビルド除外設定
 
 ```

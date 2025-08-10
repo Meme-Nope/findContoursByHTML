@@ -32,6 +32,7 @@ class ImageProcessor:
     
     def _show_histogram(self, s_channel: np.ndarray, save_path: str) -> None:
         import matplotlib.pyplot as plt
+        plt.figure()
         hist = cv2.calcHist([s_channel], [0], None, [256], [0, 256])
         plt.plot(hist, color='magenta')
         plt.title("Saturation Channel")
@@ -51,7 +52,22 @@ class ImageProcessor:
             if lo > up: lo, up = up, lo
             return cv2.inRange(s_channel, lo, up)
         elif method == "otsu":
-            _, binary = cv2.threshold(s_channel, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+            _, b1 = cv2.threshold(s_channel, 0, 255, cv2.THRESH_BINARY     + cv2.THRESH_OTSU)
+            _, b2 = cv2.threshold(s_channel, 0, 255, cv2.THRESH_BINARY_INV + cv2.THRESH_OTSU)
+
+            def score(binimg):
+                h, w = binimg.shape
+                cnts, _ = cv2.findContours(binimg, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+                if not cnts: 
+                    return -1e9  # 最低スコア
+                c = max(cnts, key=cv2.contourArea)
+                area = cv2.contourArea(c) / (h*w + 1e-6)  # 面積比
+                x,y,cw,ch = cv2.boundingRect(c)
+                touches = (x==0) or (y==0) or (x+cw==w) or (y+ch==h)
+                # 小さいほど高評価、端に触れてたら減点
+                return (0.6 - area) - (0.5 if touches else 0.0)
+
+            binary = b1 if score(b1) >= score(b2) else b2
             return binary
         else:
             raise ValueError(f"不明な2値化メソッド: {method}")
@@ -59,7 +75,7 @@ class ImageProcessor:
     def _extract_largest_contour_mask(self, binary: np.ndarray) -> np.ndarray:
         contours, _ = cv2.findContours(binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         if not contours:
-            raise ValueError("輪郭が見つかりませんでした")
+            raise ValueError("輪郭が見つかりませんでした(k/sigmaを見直してください)")
         largest = max(contours, key=cv2.contourArea)
         mask = np.zeros_like(binary)
         cv2.drawContours(mask, [largest], -1, 255, thickness=cv2.FILLED)
@@ -72,8 +88,7 @@ class ImageProcessor:
         s_channel = self._convert_to_s_channel()
         binary = self._binarize(s_channel, method=method, lower=lower, upper=upper)
         mask = self._extract_largest_contour_mask(binary)
-        mask_inv = cv2.bitwise_not(mask)
-        self.processed_image = cv2.bitwise_and(self.image, self.image, mask=mask_inv)
+        self.processed_image = cv2.bitwise_and(self.image, self.image, mask=mask)
         return self.processed_image
 
     def save(self, save_path: str) -> None:

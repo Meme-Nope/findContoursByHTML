@@ -1,0 +1,28 @@
+# Pythonキャッシュ
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 仮想環境
+.venv/
+venv/
+env/
+
+# 環境変数ファイル（秘密情報）
+.env
+
+# OS固有ファイル
+.DS_Store
+Thumbs.db
+
+# エディタ設定
+.vscode/
+.idea/
+
+# Flaskの生成物（処理結果画像など）
+app/static/*
+!app/static/.gitkeep
+
+# ログファイル
+*.log
