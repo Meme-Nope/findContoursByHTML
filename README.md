@@ -9,31 +9,102 @@ HTML UI 経由で画像をアップロードし、処理済み画像を確認で
 
 ### ✅ 前提条件
 
-- [Docker](https://docs.docker.com/get-docker/) がインストールされていること
+- Docker Desktop がインストールされていること
+- Windowsであること(Macの場合、操作内容が少し変わる可能性がある)
 
+### 1. Docker Desktopを起動する
 
-### 1. レポジトリをクローン
+左下に"Engine running"の表示があればOK
 
-```bash
-git clone https://github.com/yourusername/flask-image-processor.git
-cd flask-image-processor
-```
-### 2. Dockerイメージをビルド
+### 2. CodeをZIP形式でダウンロード
 
-```bash
-docker build -t flask-processor .
-```
-※ 初回は数分かかります
+このGitHubページの「Code」ボタンをクリック  
+「Download ZIP」を選択  
+エクスプローラーからzipフォルダを右クリック→「すべて展開」
 
 ### 3. アプリ起動
 
+解答したzipフォルダを右クリックして「ターミナルで開く(PowerShellで開く)」
+開いたターミナル(Windows PowerShell)上で、次の一文を入力して、Enter
+
 ```bash
 docker build -t flask-processor .
+```
+※最初だけ、起動に1分弱かかります。
+
+起動が完了したら、更に次の一文を入力して、Enter
+
+```bash
+docker run --name contours-app -p 5000:5000 flask-processor
 ```
 
 ### 4. ブラウザでアクセス
 
-http://localhost:5000 にアクセスすると、画像アップロードUIが表示されます。
+http://localhost:5000 にアクセス
+
+※アプリの性質上、ページをリフレッシュにより、エラーが起きることがあります。  
+URLが「
+http://localhost:5000/upload_single
+」のようになっているので、
+http://localhost:5000
+に入力し直してください。
+
+### 5. 画像とパラメータを入力
+
+「ファイルの選択」から、処理したい画像を選ぶ  
+※「ガウシアンぼかしサイズ」や「SIGMA_X」はまだ変える必要がない
+
+「アップロード」をクリック
+
+### 6. 彩度を確認
+
+彩度をグラフ化したものが表示される
+
+基本的にはOTSU(大津の二値化)を推奨
+
+グラフの山が1つしかない場合、inRange(範囲指定)を推奨  
+※このとき山の分布に合わせて、上限値と下限値を設定
+
+最適な手法を選んで、「二値化して処理」
+
+### 7. 結果の出力
+
+処理済み画像が出力される
+
+### 8. システムを止める
+
+ターミナル(Windows PowerShell)上でctrl+Cを押すとシステムが止まる
+
+### (9. もう一度使う)
+
+ターミナル(Windows PowerShell)上で次の文を入力して、Enter
+```bash
+docker start contours-app
+```
+その後、  http://localhost:5000 にアクセス
+
+### (もしエラーが起きたら)
+
+以下のエラーが発生することがある  
+docker: Error response from daemon: Conflict. The container name "/contours-app" is already in use by container  
+
+これは過去に作ったコンテナが邪魔をしている状態なので、  
+ターミナル(Windows PowerShell)上で次の文を入力して、Enterを押すと直る
+```bash
+docker rm -f contours-app
+```
+
+## ハイパーパラメータの調整
+
+画像処理が上手くいかないことも...  
+その時は「ガウシアンぼかしサイズ」と「SIGMA_X」を調整してください 
+
+余計なものが残っている→ガウシアンぼかしサイズを大きく  
+必要なものも削られている→ガウシアンぼかしサイズを小さく  
+境界がギザギザ→sigma_xを大きく  
+境界がぼやけすぎ→sigma_xを小さく
+
+※ガウシアンぼかしサイズを大きくしすぎると、処理が遅くなることがあります。
 
 ## 画像処理について
 本システムの処理フローは、以下の研究を参考に構築しました。
@@ -42,7 +113,8 @@ http://localhost:5000 にアクセスすると、画像アップロードUIが�
 「洋ナシ果実を対象とした外観汚損検査サービスの開発」,
 情報処理学会論文誌 コンシューマ・デバイス&システム, Vol.12, No.3, pp.1–9, 2022年9月.
 
-処理手順（平滑化→二値化→輪郭抽出）は同論文の流れを踏襲しています。しかし、実装は独自に行っており、再現・商用利用を目的としたものではありません。
+処理手順（平滑化→二値化→輪郭抽出）は同論文の流れを踏襲しています。しかし、実装は独自に行っており、再現・商用利用を目的としたものではありません。  
+また、一部の処理は参考文献と異なります。ご理解ください。
 
 ---
 
@@ -61,13 +133,14 @@ http://localhost:5000 にアクセスすると、画像アップロードUIが�
 ## 📁 ディレクトリ構成
 ```
 .
-├── app/
+├── src/
 │   ├── main.py         ← Flaskエントリーポイント
 │   ├── processor.py    ← OpenCVによる画像処理
-│   ├── templates/      ← index.html
-│   └── static/         ← 処理後画像などの保存場所
+│   ├── templates/      ← index.htmlを保存
+│   └── static/         ← 処理後画像やデザインを保存
 ├── requirements.txt    ← 必要なPythonライブラリ
 ├── Dockerfile          ← 実行環境定義
+├── .gitignore          ← Gitレポジトリ除外設定
 └── .dockerignore       ← ビルド除外設定
 
 ```

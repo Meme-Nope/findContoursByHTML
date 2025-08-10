@@ -18,11 +18,13 @@ body {
   align-items: center;
 }
 
-img, label {
+img,
+label {
   display: inline-block;
 }
 
-ul, ol {
+ul,
+ol {
   list-style: none;
 }
 
@@ -34,6 +36,10 @@ a {
 
 em {
   font-style: normal;
+}
+
+#rangeFields {
+  display: none;
 }
 
 /*# sourceMappingURL=style.css.map */

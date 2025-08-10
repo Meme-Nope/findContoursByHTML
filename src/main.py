@@ -21,15 +21,25 @@ os.makedirs(HIST_FOLDER, exist_ok=True)
 # 数値をタプルに変換
 def parse_k_size(k_size_str: str) -> tuple[int, int]:
     try:
-        parts = k_size_str.split(",")
-        return (int(parts[0]), int(parts[1]))
+        s = (k_size_str or '').strip()
+        if ',' in s:
+            a, b = s.split(',', 1)
+            kx, ky = int(a), int(b)
+        else:
+            kx = ky = int(s)
     except Exception:
-        return (3, 3)
+        kx = ky = 3
+
+    # ガード：3未満→3、偶数→+1
+    kx = max(3, kx); ky = max(3, ky)
+    if kx % 2 == 0: kx += 1
+    if ky % 2 == 0: ky += 1
+    return (kx, ky)
 
 #アプリ起動と同時にhtmlを呼び出し
 @app.route("/", methods=["GET"])
 def index():
-    return render_template("index.html")
+    return render_template("index.html",k_size_str="3", sigma_x_str="0")
 
 # 画像1枚の処理前半
 @app.route("/upload_single", methods=["POST"])
@@ -43,40 +53,45 @@ def upload_single():
     if not base.isascii() or base == "":
         base = uuid.uuid4().hex
     filename = f"{base}.jpg"
-
-    filename = secure_filename(file.filename)
     input_path = os.path.join(UPLOAD_FOLDER, filename)
     file.save(input_path)
 
     # パラメータ取得
-    k_size = parse_k_size(request.form.get("k_size", "3,3"))
-    sigma_x = float(request.form.get("sigma_x", "-1"))
-    show_hist = "show_hist" in request.form
+    k_val = int(request.form.get('k_size'))
+    k_size = parse_k_size(str(k_val))
+    sigma_x = float(request.form.get("sigma_x",0))
+    if sigma_x < 0: sigma_x = 0.0
 
     # 処理
     processor = ImageProcessor(input_path, k_size=k_size, sigma_x=sigma_x)
-    l_channel = processor._convert_to_l_channel()
-    hist_path = os.path.join(HIST_FOLDER, "histogram.png")
-    processor._show_histogram(l_channel, hist_path)
-    hist_url = "histogram/histogram.png"
-   
+    s_channel = processor._convert_to_s_channel()
+    hist_name = f"hist_{base}.png"
+    hist_path = os.path.join(HIST_FOLDER, hist_name)
+    processor._show_histogram(s_channel, hist_path)
+    hist_url = f"histogram/{hist_name}"
 
     return render_template("index.html",
                             hist_image=hist_url,
                             timestamp=datetime.now().timestamp(),
                             image_filename=filename,
-                            k_size_str=request.form.get("k_size", "3,3"),
-                            sigma_x_str=request.form.get("sigma_x", "-1"))
+                            k_size_str=str(k_size[0]),
+                            sigma_x_str=str(sigma_x)
+    )
+
+
 # 画像1枚の処理後半
 @app.route("/binarize_single", methods=["POST"])
 def binarize_single():
     filename = request.form.get("filename")
+    if not filename:
+        return "ファイル名がありません", 400
     input_path = os.path.join(UPLOAD_FOLDER, filename)
 
-    k_size = parse_k_size(request.form.get("k_size", "3,3"))
-    sigma_x = float(request.form.get("sigma_x", "-1"))
-    method = request.form.get("method", "inRange")
+    k_size = parse_k_size(request.form.get("k_size", "3"))
+    sigma_x = float(request.form.get("sigma_x", "0"))
+    if sigma_x < 0: sigma_x = 0.0
 
+    method = request.form.get("method", "otsu")
     lower = int(request.form.get("lower", 100)) if method == "inRange" else None
     upper = int(request.form.get("upper", 200)) if method == "inRange" else None
 
@@ -87,7 +102,13 @@ def binarize_single():
     processor.save(save_path)
     result_url = "results/" + filename
 
-    return render_template("index.html", result_files=[result_url])
+    return render_template(
+        "index.html",
+        result_files=[result_url],
+        k_size_str=str(k_size[0]),
+        sigma_x_str=str(sigma_x),
+        image_filename=filename
+    )
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
