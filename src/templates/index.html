@@ -25,7 +25,8 @@
 
   {% if hist_image %}
   <h2>ヒストグラム:</h2>
-  <img src="{{ url_for('static', filename=hist_image) }}"><br>
+  <img src="{{ url_for('static', filename=hist_image) }}?t={{ timestamp }}" alt="ヒストグラム表示エラー">
+
 
   <form method="POST" action="/binarize_single">
     <input type="hidden" name="filename" value="{{ image_filename }}">
@@ -61,27 +62,6 @@
     <img src="{{ url_for('static', filename=img) }}" width="300"><br>
   {% endfor %}
 {% endif %}
-
-
-  <!-- <hr> -->
-
-  <!-- フォルダアップロードフォーム -->
-  <!-- <h2>② フォルダごとアップロード（複数画像）</h2>
-  <form method="POST" action="/upload_folder" enctype="multipart/form-data">
-    <label>フォルダを選択:</label>
-    <input type="file" name="files" webkitdirectory directory multiple required>
-    <br>
-    <label>ガウシアンぼかしサイズ (K_SIZE):</label>
-    <input type="text" name="k_size" value="3,3">
-    <br>
-    <label>SIGMA_X:</label>
-    <input type="text" name="sigma_x" value="-1">
-    <br>
-    <label>ヒストグラム表示:</label>
-    <input type="checkbox" name="show_hist">
-    <br>
-    <button type="submit">フォルダごとアップロード</button>
-  </form> -->
 
 </body>
 </html>
