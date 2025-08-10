@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>画像アップロードページ</title>
+  <link rel="stylesheet" href="../static/css/style.css">
+</head>
+<body>
+  <h1>画像前処理ツール</h1>
+
+  <!-- 単一画像アップロードフォーム -->
+  <h2>① 画像1枚をアップロード</h2>
+  <form method="POST" action="/upload_single" enctype="multipart/form-data">
+    <label>画像を選択:</label>
+    <input type="file" name="image" accept="image/*" required>
+    <br>
+    <label>ガウシアンぼかしサイズ (K_SIZE):</label>
+    <input type="text" name="k_size" value="3,3">
+    <br>
+    <label>SIGMA_X:</label>
+    <input type="text" name="sigma_x" value="-1">
+    <br>
+    <button type="submit">アップロード</button>
+  </form>
+
+  {% if hist_image %}
+  <h2>ヒストグラム:</h2>
+  <img src="{{ url_for('static', filename=hist_image) }}?t={{ timestamp }}" alt="ヒストグラム表示エラー">
+
+
+  <form method="POST" action="/binarize_single">
+    <input type="hidden" name="filename" value="{{ image_filename }}">
+    <input type="hidden" name="k_size" value="{{ k_size_str }}">
+    <input type="hidden" name="sigma_x" value="{{ sigma_x_str }}">
+    
+    <label>二値化方法:</label>
+    <select name="method" onchange="toggleRangeFields(this.value)">
+      <option value="inRange">inRange</option>
+      <option value="otsu">OTSU</option>
+    </select><br>
+
+    <div id="rangeFields">
+      <label>下限値:</label>
+      <input type="number" name="lower" value="100"><br>
+      <label>上限値:</label>
+      <input type="number" name="upper" value="200"><br>
+    </div>
+
+    <button type="submit">二値化して処理</button>
+  </form>
+
+  <script>
+    function toggleRangeFields(method) {
+      document.getElementById("rangeFields").style.display = (method === "inRange") ? "block" : "none";
+    }
+  </script>
+{% endif %}
+
+{% if result_files %}
+  <h3>処理済み画像:</h3>
+  {% for img in result_files %}
+    <img src="{{ url_for('static', filename=img) }}" width="300"><br>
+  {% endfor %}
+{% endif %}
+
+</body>
+</html>
